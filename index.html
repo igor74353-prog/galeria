@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Industrial</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif}
+html,body{height:100%}
+body{background:#f0f2f5;color:#333;display:flex;flex-direction:column;overflow:hidden}
+[hidden]{display:none!important}
+.overlay{position:fixed;inset:0;z-index:50;background:linear-gradient(135deg,#1b365d,#107c41);display:flex;padding:16px;overflow:auto}
+.card{background:#fff;border-radius:10px;padding:24px;width:440px;max-width:100%;display:flex;flex-direction:column;gap:8px;margin:auto}
+.card h2{color:#107c41}
+#boxLogin,#boxPasta,details div{display:flex;flex-direction:column;gap:8px}
+label{font-size:12px;font-weight:600;color:#555}
+input,select{padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;width:100%}
+button{background:#107c41;color:#fff;border:0;padding:8px 12px;border-radius:4px;font-weight:600;cursor:pointer;font-size:13px}
+button:hover{filter:brightness(.9)}
+.b2{background:#00a2ed}.b3{background:#6c757d}.dg{background:#d9534f}
+.small{font-size:12px;color:#666}
+header{background:#f3f3f3;border-bottom:1px solid #d4d4d4;padding:6px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+header b{color:#107c41;flex:1;min-width:160px}
+header input{width:auto}
+main{flex:1;overflow:auto}
+#vQuadro{display:flex}
+#vChefia{display:grid;grid-template-columns:repeat(auto-fill,300px);gap:16px;padding:16px;align-content:start}
+.lc{background:#fff;border-radius:6px;box-shadow:0 2px 8px #0002;padding:14px;display:flex;flex-direction:column;gap:8px}
+.lc h4{color:#107c41;font-size:15px}
+.th{grid-column:1/-1;color:#1b365d;border-bottom:2px solid #1b365d;padding-bottom:2px;margin-top:6px}
+.acoes{display:flex;gap:6px;flex-wrap:wrap}
+.acoes button{padding:5px 10px;font-size:12px}
+table{flex:1;width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+th,td{border:1px solid #d4d4d4;text-align:center;position:relative;overflow:hidden}
+thead th{height:30px;font-size:12px;background:#f8f9fa}
+td{cursor:pointer}td:hover{background:#f1f8e9}td i{color:#bbb;font-size:11px}
+.gal{position:absolute;inset:0;background:#fff}
+.gal img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;z-index:calc(10 - var(--d,0));pointer-events:none}
+.gal img.on{pointer-events:auto}
+.nums{position:absolute;top:3px;left:3px;display:flex;gap:2px;z-index:20}
+.nm{padding:1px 6px;font-size:11px;background:#000a;border-radius:3px}
+.nm.on{background:#107c41;outline:1px solid #fff}
+.nv{position:absolute;top:50%;transform:translateY(-50%);z-index:20;padding:3px 7px;font-size:12px;background:#000a;border-radius:3px}
+.nv.l{left:3px}.nv.r{right:3px}
+.bg{position:absolute;bottom:2px;left:2px;right:2px;font-size:9px;background:#000b;color:#fff;border-radius:2px;z-index:20}
+th.dia{width:46px;color:#fff;font-size:12px;writing-mode:vertical-rl;transform:rotate(180deg)}
+.segunda{background:#2b7a0b}.terca{background:#00a2ed}.quarta{background:#ffbb00;color:#222!important}.quinta{background:#ea4335}.sexta{background:#1b365d}
+#viewer{position:fixed;inset:0;z-index:100;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;padding:12px;gap:10px}
+#viewer img{flex:1;min-height:0;max-width:100%;object-fit:contain}
+#vTop,#vBar{display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;flex-wrap:wrap}
+#vTit{font-weight:700;color:#ffbb00}
+</style>
+</head>
+<body>
+
+<div id="home" class="overlay"><div class="card">
+ <h2>🏭 Painel Industrial</h2>
+ <div class="small" id="modoInfo">Conectando…</div>
+ <div class="small" style="color:#aaa">Versão: turnos-1</div>
+ <div id="boxPasta" hidden>
+  <p class="small">Escolha a pasta compartilhada onde o painel guarda os dados e as imagens.</p>
+  <button id="btnSalva" hidden></button>
+  <button id="btnPasta" class="b3">📁 Selecionar pasta da rede</button>
+ </div>
+ <div id="boxLogin" hidden>
+  <label>Turno</label><select id="selTurno"><option>1º Turno</option><option>2º Turno</option><option>3º Turno</option></select>
+  <label>Setor</label><select id="selSetor"></select>
+  <label>Senha (do setor ou da chefia)</label><input type="password" id="inSenha">
+  <button id="btnEntrar">🔑 Entrar no setor</button>
+  <button id="btnChefia" class="b2">🏢 Visão geral (chefia)</button>
+  <details><summary class="small">➕ Cadastrar setor (pede a senha da chefia)</summary>
+   <div style="margin-top:8px">
+    <label>Nome do setor / linha</label><input id="cadNome" placeholder="Ex: Linha 1 - Chassis">
+    <p class="small">O setor é criado nos 3 turnos. Defina a senha de cada turno (mínimo 4 caracteres). Deixe em branco o turno em que este setor não existe.</p>
+    <label>Senha do 1º Turno</label><input type="password" id="cadS1">
+    <label>Senha do 2º Turno</label><input type="password" id="cadS2">
+    <label>Senha do 3º Turno</label><input type="password" id="cadS3">
+    <label>Senha da chefia</label><input type="password" id="cadChefia">
+    <button id="btnCad" class="b3">Cadastrar setor</button>
+   </div>
+  </details>
+ </div>
+</div></div>
+
+<header id="hdr" hidden>
+ <b id="titulo"></b>
+ <span id="stat" class="small"></span>
+ <input type="month" id="semana">
+ <button id="btnVoltar" class="b3" hidden>◀ Setores</button>
+ <button id="btnSenha" class="b3" hidden>🔑 Trocar senha</button>
+ <button id="btnTV" class="b3">📺 Modo TV</button>
+ <button id="btnSair" class="b3">🏠 Sair</button>
+</header>
+<main id="vChefia" hidden></main>
+<main id="vQuadro" hidden><table id="tab"></table></main>
+
+<div id="viewer" hidden>
+ <div id="vTop"><span id="vTit"></span><button id="btnFechar" class="dg">✖ Fechar</button></div>
+ <img id="vImg" alt="">
+ <div id="vBar">
+  <span id="vAcoes"><button id="btnAdd" class="b2">➕ Adicionar</button> <button id="btnSub">🔄 Substituir</button> <button id="btnDel" class="dg">🗑 Excluir</button></span>
+  <span id="vNav"><button id="btnAnt">◀</button> <button id="btnProx">▶</button></span>
+ </div>
+</div>
+<div id="mSenha" class="overlay" hidden style="background:#000a;z-index:120"><div class="card">
+ <h2 id="mTit">🔑 Senha</h2>
+ <label id="mAtualL">Senha atual</label><input type="password" id="mAtual">
+ <label>Nova senha (mínimo 4 caracteres)</label><input type="password" id="mNova">
+ <label>Repita a nova senha</label><input type="password" id="mNova2">
+ <div class="acoes"><button id="mOk">Salvar</button><button id="mCancel" class="b3">Cancelar</button></div>
+</div></div>
+<div id="toast" hidden style="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1b365d;color:#fff;padding:10px 18px;border-radius:20px;z-index:130;font-size:14px"></div>
+<input type="file" id="file" accept="image/*" multiple hidden>
+
+<script>
+const DIAS=[['segunda','SEGUNDA'],['terca','TERÇA'],['quarta','QUARTA'],['quinta','QUINTA'],['sexta','SEXTA']];
+const PILARES=[['main','MAIN'],['sub','SUB'],['kaizen','KAIZEN'],['process','PROCESS'],['campions','CAMPIONS BODY'],['heikaten','HEIKATEN']];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=q=>new Date(q).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+let api,sess,setorAtual,lista=[],quadro={},kAtual,tvTimer=null;
+
+function mesAtual(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+
+const idb=()=>new Promise((ok,no)=>{const r=indexedDB.open('painel-industrial',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);});
+async function idbGet(k){try{const d=await idb();return await new Promise(ok=>{const q=d.transaction('k').objectStore('k').get(k);q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null);});}catch{return null;}}
+async function idbSet(k,v){try{const d=await idb();d.transaction('k','readwrite').objectStore('k').put(v,k);}catch{}}
+
+/* ===== MODO 2: PASTA COMPARTILHADA (Chrome/Edge) ===== */
+const FolderAPI={
+ root:null,
+ TURNOS:['1º Turno','2º Turno','3º Turno'],
+ async init(h){
+  if(h){if((await h.requestPermission({mode:'readwrite'}))!=='granted')throw new Error('Permissão negada para a pasta.');this.root=h;}
+  else this.root=await showDirectoryPicker({mode:'readwrite'});
+  await idbSet('pasta',this.root);
+  try{await this.root.getFileHandle('config.json');}catch(e){
+   if(e.name!=='NotFoundError')throw new Error('Não foi possível ler a pasta ('+e.name+'). Verifique a rede e tente de novo.');
+   let tem=false;try{await this.root.getDirectoryHandle('setores');tem=true;}catch{}
+   if(!confirm(tem?'A senha da chefia não está definida nesta pasta (config.json ausente). Definir uma senha nova?':'A pasta "'+this.root.name+'" ainda não tem um painel. Criar um painel novo nela?'))throw new Error('Operação cancelada.');
+   const s=prompt('Defina a senha da chefia:');
+   if(!s)throw new Error('A senha da chefia é obrigatória.');
+   await this.gravar(['config.json'],JSON.stringify(await this.mk(s)));
+  }
+  for(const t of this.TURNOS)await this.dir([t],true);
+ },
+ async mk(senha){const salt=crypto.randomUUID();return{salt,hash:await sha(salt+senha)};},
+ async dir(parts,create=false){let d=this.root;for(const p of parts)d=await d.getDirectoryHandle(p,{create});return d;},
+ async gravar(parts,data){const d=await this.dir(parts.slice(0,-1),true),f=await d.getFileHandle(parts[parts.length-1],{create:true}),w=await f.createWritable();await w.write(data);await w.close();},
+ async lerJSON(parts){const d=await this.dir(parts.slice(0,-1)),f=await(await d.getFileHandle(parts[parts.length-1])).getFile();return JSON.parse(await f.text());},
+ async setores(){const out=[];try{const d=await this.dir(['setores']);for await(const [n,h] of d.entries()){if(n.endsWith('.json')){const s=JSON.parse(await(await h.getFile()).text());out.push({id:s.id,nome:s.nome,turno:s.turno,dir:Array.isArray(s.dir)?s.dir:null});}}}catch(e){if(e.name!=='NotFoundError')throw e;}return out.sort((a,b)=>(a.nome+a.turno).localeCompare(b.nome+b.turno));},
+ async login(id,senha){
+  let c;try{c=id==='chefia'?await this.lerJSON(['config.json']):await this.lerJSON(['setores',id+'.json']);}catch{throw new Error('Setor não encontrado.');}
+  if(await sha(c.salt+senha)!==c.hash)throw new Error('Senha incorreta.');
+  return id==='chefia'?{role:'chefia'}:{role:'setor',setor:id};
+ },
+ async criarSetor(nome,senhas,sc){
+  await this.login('chefia',sc);
+  const ts=this.TURNOS.filter(t=>(senhas[t]||'')!=='');
+  if(!ts.length)throw new Error('Informe a senha de pelo menos um turno.');
+  if(ts.some(t=>senhas[t].length<4))throw new Error('As senhas precisam ter no mínimo 4 caracteres.');
+  const atuais=await this.setores();
+  for(const t of ts){
+   if(atuais.some(x=>x.nome.toLowerCase()===nome.toLowerCase()&&x.turno===t))throw new Error('O setor "'+nome+'" já existe no '+t+'.');
+   await this.livre(this.dirDe(nome,t));
+  }
+  for(const t of this.TURNOS)await this.dir([t],true);
+  for(const t of ts){
+   const dir=this.dirDe(nome,t),id=crypto.randomUUID().slice(0,8),{salt,hash}=await this.mk(senhas[t]);
+   await this.gravar(['setores',id+'.json'],JSON.stringify({id,nome,turno:t,salt,hash,dir}));
+   await this.dir(dir,true);
+  }
+  return ts.length;
+ },
+ san(t){t=String(t).replace(/[\\/:*?"<>|\x00-\x1f]/g,'-').replace(/\s+/g,' ').trim().replace(/[. ]+$/,'').slice(0,60);return t||'Setor';},
+ dirDe(nome,turno){return [this.san(turno),this.san(nome)];},
+ async base(id){try{const s=await this.lerSetor(id);if(Array.isArray(s.dir))return s.dir;}catch(e){if(e.name!=='NotFoundError')throw e;}return ['img',id];},
+ async caminho(st,sem){return [...await this.base(st),sem];},
+ async livre(dir,exceto){const l=await this.setores();if(l.some(x=>x.id!==exceto&&(x.dir||['img',x.id]).join('/').toLowerCase()===dir.join('/').toLowerCase()))throw new Error('Já existe um setor com nome parecido neste turno. Escolha outro nome.');},
+ async copiar(de,para){for await(const [n,h] of de.entries()){if(h.kind==='directory')await this.copiar(h,await para.getDirectoryHandle(n,{create:true}));else{const f=await h.getFile(),fh=await para.getFileHandle(n,{create:true}),w=await fh.createWritable();await w.write(f);await w.close();}}},
+ async mover(velho,novo){
+  let de;try{de=await this.dir(velho);}catch(e){if(e.name==='NotFoundError')return;throw e;}
+  await this.copiar(de,await this.dir(novo,true));
+  const pai=await this.dir(velho.slice(0,-1));await pai.removeEntry(velho[velho.length-1],{recursive:true});
+  if(velho.length===3){let vazio=true;for await(const _ of pai.entries()){vazio=false;break;}if(vazio){const av=await this.dir(velho.slice(0,-2));await av.removeEntry(velho[1]);}}
+ },
+ async renomearSetor(velho,novo){
+  const todos=await this.setores(),l=todos.filter(x=>x.nome.toLowerCase()===velho.toLowerCase());
+  if(!l.length)throw new Error('Setor não encontrado.');
+  for(const x of l){
+   if(todos.some(y=>y.id!==x.id&&y.nome.toLowerCase()===novo.toLowerCase()&&y.turno===x.turno))throw new Error('O setor "'+novo+'" já existe no '+x.turno+'.');
+   await this.livre(this.dirDe(novo,x.turno),x.id);
+  }
+  for(const x of l)await this.renomear(x.id,novo,x.turno);
+ },
+ async organizar(id){const s=await this.lerSetor(id);if(Array.isArray(s.dir))return false;const novo=this.dirDe(s.nome,s.turno);await this.livre(novo,id);await this.mover(['img',id],novo);await this.gravar(['setores',id+'.json'],JSON.stringify({...s,dir:novo}));return true;},
+ async lerSetor(id){return this.lerJSON(['setores',id+'.json']);},
+ async redefinirSenha(id,nova){const s=await this.lerSetor(id),{salt,hash}=await this.mk(nova);await this.gravar(['setores',id+'.json'],JSON.stringify({...s,salt,hash}));},
+ async trocarSenha(id,atual,nova){await this.login(id,atual);await this.redefinirSenha(id,nova);},
+ async renomear(id,nome,turno){if((await this.setores()).some(x=>x.id!==id&&x.nome.toLowerCase()===nome.toLowerCase()&&x.turno===turno))throw new Error('Esse setor/turno já existe.');const s=await this.lerSetor(id),velho=Array.isArray(s.dir)?s.dir:['img',id],novo=this.dirDe(nome,turno),mesmo=velho.join('/').toLowerCase()===novo.join('/').toLowerCase();
+  if(!mesmo){await this.livre(novo,id);await this.mover(velho,novo);}
+  await this.gravar(['setores',id+'.json'],JSON.stringify({...s,nome,turno,dir:mesmo?velho:novo}));},
+ async apagarSetor(id){const b=await this.base(id);const d=await this.dir(['setores']);await d.removeEntry(id+'.json');try{const p=await this.dir(b.slice(0,-1));await p.removeEntry(b[b.length-1],{recursive:true});}catch{}},
+ async quadro(st,sem){const o={};try{const d=await this.dir(await this.caminho(st,sem));for await(const [n,h] of d.entries()){if(n.endsWith('.jpg')){const f=await h.getFile();let kk=n.slice(0,-4);if(kk.split('-').length===2)kk+='-1';o[kk]={url:URL.createObjectURL(f),quando:new Date(f.lastModified).toISOString()};}}}catch(e){if(e.name!=='NotFoundError')throw e;}return o;},
+ async enviar(st,sem,k,blob){await this.gravar([...await this.caminho(st,sem),k+'.jpg'],blob);if(k.endsWith('-1')){try{const d=await this.dir(await this.caminho(st,sem));await d.removeEntry(k.slice(0,-2)+'.jpg');}catch{}}},
+ async remover(st,sem,k){const d=await this.dir(await this.caminho(st,sem));let feito=false;
+  try{await d.removeEntry(k+'.jpg');feito=true;}catch(e){if(e.name!=='NotFoundError')throw e;}
+  if(k.endsWith('-1')){try{await d.removeEntry(k.slice(0,-2)+'.jpg');feito=true;}catch(e){if(e.name!=='NotFoundError')throw e;}}
+  if(!feito)throw new Error('Arquivo não encontrado.');},
+ async contar(st,sem){let a=0;const c=new Set();try{const d=await this.dir(await this.caminho(st,sem));for await(const [k] of d.entries())if(k.endsWith('.jpg')){a++;c.add(k.split('-').slice(0,2).join('-'));}}catch(e){if(e.name!=='NotFoundError')throw e;}return{a,c:c.size};},
+ async existe(id){try{const d=await this.dir(['setores']);await d.getFileHandle(id+'.json');return true;}catch(e){return e.name!=='NotFoundError';}},
+ async resumo(sem){const l=await this.setores();for(const s of l){const r=await this.contar(s.id,sem);s.qtd=r.c;s.arq=r.a;s.legado=!s.dir;}return l;}
+};
+
+/* ===== INÍCIO ===== */
+async function iniciar(){
+ $('semana').value=mesAtual();
+ if(window.showDirectoryPicker){$('modoInfo').textContent='📁 Modo pasta compartilhada';$('boxPasta').hidden=false;const h=await idbGet('pasta');if(h){$('btnSalva').hidden=false;$('btnSalva').textContent='📁 Continuar na pasta: '+h.name;$('btnSalva').onclick=()=>abrirPasta(h);}}
+ else $('modoInfo').textContent='❌ Este navegador não suporta o modo pasta. Use o Google Chrome ou o Edge.';
+}
+async function carregarSetores(){lista=await api.setores();popularSetores();}
+function popularSetores(){
+ const t=$('selTurno').value,ls=lista.filter(s=>s.turno===t).sort((a,b)=>a.nome.localeCompare(b.nome));
+ $('selSetor').innerHTML=ls.map(s=>`<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('')||'<option value="">Nenhum setor neste turno</option>';
+}
+$('selTurno').onchange=popularSetores;
+async function abrirPasta(h){try{api=FolderAPI;await api.init(h);$('boxPasta').hidden=true;$('boxLogin').hidden=false;await carregarSetores();}catch(e){alert(e.message);}}
+$('btnPasta').onclick=()=>abrirPasta();
+$('btnCad').onclick=async()=>{
+ const nome=$('cadNome').value.trim(),senhas={'1º Turno':$('cadS1').value,'2º Turno':$('cadS2').value,'3º Turno':$('cadS3').value};
+ if(!nome)return alert('Informe o nome do setor.');
+ try{const n=await api.criarSetor(nome,senhas,$('cadChefia').value);['cadNome','cadS1','cadS2','cadS3','cadChefia'].forEach(i=>$(i).value='');await carregarSetores();alert('Setor cadastrado em '+n+' turno(s)!');}catch(e){alert(e.message);}
+};
+async function entrar(id){
+ try{sess=await api.login(id,$('inSenha').value);}catch(e){return alert(e.message);}
+ $('inSenha').value='';$('home').hidden=true;
+ if(sess.role==='chefia')abrirChefia();
+ else{const s=lista.find(x=>x.id===sess.setor)||{nome:'Setor',turno:''};abrirQuadro(sess.setor,`${s.nome} (${s.turno})`);}
+}
+$('btnEntrar').onclick=()=>{const id=$('selSetor').value;if(!id)return alert('Nenhum setor cadastrado.');entrar(id);};
+$('btnChefia').onclick=()=>entrar('chefia');
+$('inSenha').onkeydown=e=>{if(e.key==='Enter')$('btnEntrar').click();};
+
+function pedirSenha(titulo,pedeAtual){return new Promise(ok=>{
+ $('mTit').textContent=titulo;$('mAtual').hidden=$('mAtualL').hidden=!pedeAtual;
+ ['mAtual','mNova','mNova2'].forEach(i=>$(i).value='');$('mSenha').hidden=false;(pedeAtual?$('mAtual'):$('mNova')).focus();
+ const fim=v=>{$('mSenha').hidden=true;ok(v);};
+ $('mOk').onclick=()=>{const n=$('mNova').value;if(n.length<4)return alert('A nova senha precisa ter no mínimo 4 caracteres.');if(n!==$('mNova2').value)return alert('As senhas não conferem.');fim({atual:$('mAtual').value,nova:n});};
+ $('mCancel').onclick=()=>fim(null);
+});}
+$('mSenha').onkeydown=e=>{if(e.key==='Enter')$('mOk').click();if(e.key==='Escape')$('mCancel').click();};
+$('btnSenha').onclick=async()=>{const r=await pedirSenha('🔑 Trocar minha senha',true);if(!r)return;try{await api.trocarSenha(sess.setor,r.atual,r.nova);alert('Senha alterada!');}catch(e){alert(e.message);}};
+
+/* ===== TELAS ===== */
+function abrirChefia(){setorAtual=null;$('titulo').textContent='🏢 Painel da Chefia — todos os setores';$('hdr').hidden=false;$('vQuadro').hidden=true;$('vChefia').hidden=false;$('btnTV').hidden=true;$('btnSenha').hidden=true;$('btnVoltar').hidden=true;atualizar();}
+function abrirQuadro(id,nome){setorAtual={id,nome};quadro={};$('titulo').textContent='📊 '+nome;$('hdr').hidden=false;$('vChefia').hidden=true;$('vQuadro').hidden=false;$('btnTV').hidden=false;$('btnVoltar').hidden=sess.role!=='chefia';$('btnSenha').hidden=sess.role!=='setor';desenhar();atualizar();}
+$('vChefia').onclick=async e=>{
+ const t=e.target.dataset||{};
+ if(t.org){
+  if(!confirm('Organizar as pastas deste setor em "img/Turno/Setor"?\n\nAs imagens serão copiadas para a nova pasta e as antigas apagadas. Faça isso fora do horário de uso, sem ninguém enviando fotos.'))return;
+  try{toast('⏳ Organizando pastas…');await api.organizar(t.org);await carregarSetores();await atualizar();toast('✅ Pastas organizadas');setTimeout(()=>toast(''),2500);}catch(err){toast('');alert('Falha ao organizar: '+err.message);}
+  return;
+ }
+ const sid=t.senha||t.ren;
+ if(sid){
+  const s=lista.find(x=>x.id===sid)||{nome:'setor',turno:''};
+  if(t.senha){const r=await pedirSenha(`🔑 Redefinir senha — ${s.nome} (${s.turno})`,false);if(!r)return;try{await api.redefinirSenha(sid,r.nova);alert('Senha redefinida!');}catch(err){alert('Falha: '+err.message);}return;}
+  const nome=prompt('Novo nome do setor "'+s.nome+'" (vale para todos os turnos):',s.nome);if(nome===null||!nome.trim())return;
+  toast('⏳ Atualizando pastas…');try{await api.renomearSetor(s.nome,nome.trim().slice(0,60));await carregarSetores();await atualizar();}catch(err){alert('Falha: '+err.message);}toast('');
+  return;
+ }
+ if(t.del){
+  const s=lista.find(x=>x.id===t.del)||{nome:'este setor',turno:''};
+  if(!confirm(`Excluir o setor "${s.nome} (${s.turno})"?\n\nIsso apaga o cadastro, a senha e TODAS as imagens dele. Não dá para desfazer.`))return;
+  try{await api.apagarSetor(t.del);await carregarSetores();await atualizar();}catch(err){alert('Falha ao excluir: '+err.message);}
+  return;
+ }
+ const id=t.id;if(!id)return;const s=lista.find(x=>x.id===id)||{nome:'Setor',turno:''};abrirQuadro(id,`${s.nome} (${s.turno})`);};
+$('btnVoltar').onclick=abrirChefia;
+$('btnSair').onclick=()=>{fecharViewer();sess=null;setorAtual=null;$('hdr').hidden=true;$('vChefia').hidden=true;$('vQuadro').hidden=true;$('home').hidden=false;if(api&&api.root)carregarSetores().catch(()=>{});};
+$('semana').onchange=()=>atualizar();
+
+const hora=()=>new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+function statOk(){$('stat').textContent='Atualizado às '+hora();$('stat').style.color='';}
+function statFalha(){$('stat').textContent='⚠ Falha ao atualizar às '+hora()+' — dados podem estar desatualizados';$('stat').style.color='#d9534f';}
+async function atualizar(){
+ const sem=$('semana').value;if(!sem||!sess)return;
+ const alvo=setorAtual&&setorAtual.id;
+ try{
+  if(!setorAtual){
+   const r=await api.resumo(sem);if(setorAtual)return;
+   const ord=[...r].sort((a,b)=>(a.turno+a.nome).localeCompare(b.turno+b.nome));let ult='';
+   $('vChefia').innerHTML=ord.map(s=>(s.turno!==ult?(ult=s.turno,`<h3 class="th">${esc(s.turno)}</h3>`):'')+`<div class="lc"><h4>🏭 ${esc(s.nome)}</h4><p>Quadrados preenchidos: <b>${s.qtd}/30</b> · Arquivos: <b>${s.arq}</b></p><div class="acoes"><button data-id="${esc(s.id)}">🔍 Ver quadro</button><button class="b2" data-senha="${esc(s.id)}">🔑 Senha</button><button class="b3" data-ren="${esc(s.id)}">✏️ Renomear</button>${s.legado?`<button class="b3" data-org="${esc(s.id)}">📁 Organizar</button>`:''}<button class="dg" data-del="${esc(s.id)}">🗑 Excluir</button></div></div>`).join('')||'<p>Nenhum setor cadastrado.</p>';
+  }else{
+   if(!(await api.existe(alvo))){if(!setorAtual||setorAtual.id!==alvo)return;alert(sess.role==='setor'?'Este setor foi excluído pela chefia.':'Este setor não existe mais.');if(sess.role==='setor')$('btnSair').click();else abrirChefia();return;}
+   const novo=await api.quadro(alvo,sem);if(!setorAtual||setorAtual.id!==alvo)return;
+   const velho=quadro;quadro=novo;desenhar();
+   Object.values(velho).forEach(i=>i.url.startsWith('blob:')&&URL.revokeObjectURL(i.url));
+  }
+  statOk();
+ }catch(e){console.error(e);statFalha();}
+}
+setInterval(atualizar,60000);
+
+function montarTabela(){
+ $('tab').innerHTML='<thead><tr><th></th>'+PILARES.map(p=>`<th>${p[1]}</th>`).join('')+'</tr></thead><tbody>'+
+ DIAS.map(([d,n])=>`<tr><th class="dia ${d}">${n}</th>`+PILARES.map(([p])=>`<td data-k="${d}-${p}"></td>`).join('')+'</tr>').join('')+'</tbody>';
+}
+const SLOTS=[1,2,3,4,5];
+const itens=c=>SLOTS.map(n=>c+'-'+n).filter(k=>quadro[k]);
+const cellIdx={};
+function desenhar(){
+ document.querySelectorAll('#tab td').forEach(td=>{
+  const c=td.dataset.k,ks=itens(c);
+  if(!ks.length){td.innerHTML='<i>Vazio</i>';return;}
+  const n=ks.length,i=(cellIdx[c]||0)%n;cellIdx[c]=i;
+  const ult=ks.map(k=>quadro[k].quando).sort().pop();
+  td.innerHTML='<div class="gal">'+ks.map((k,j)=>{const d=(j-i+n)%n;return `<img src="${quadro[k].url}" data-fk="${k}" alt="" style="--d:${d}"${d===0?' class="on"':''}>`;}).join('')+'</div>'+
+   (n>1?'<div class="nums">'+ks.map((k,j)=>`<button class="nm${j===i?' on':''}" data-go="${j}">${j+1}</button>`).join('')+'</div><button class="nv l" data-nv="-1">◀</button><button class="nv r" data-nv="1">▶</button>':'')+
+   `<span class="bg">${esc(fmt(ult))}</span>`;
+ });
+}
+function irPara(td,i){
+ const imgs=td.querySelectorAll('.gal img'),n=imgs.length;if(n<2)return;
+ i=((i%n)+n)%n;cellIdx[td.dataset.k]=i;
+ imgs.forEach((im,j)=>{const d=(j-i+n)%n;im.style.setProperty('--d',d);im.classList.toggle('on',d===0);});
+ td.querySelectorAll('.nm').forEach((b,j)=>b.classList.toggle('on',j===i));
+}
+function trocar(td,d){irPara(td,(cellIdx[td.dataset.k]||0)+d);}
+montarTabela();
+
+/* ===== ENVIO / VISUALIZAÇÃO ===== */
+$('tab').onclick=e=>{
+ const td=e.target.closest('td');if(!td)return;const c=td.dataset.k,ks=itens(c),fk=e.target.dataset&&e.target.dataset.fk;
+ if(e.target.dataset&&e.target.dataset.nv){trocar(td,+e.target.dataset.nv);return;}
+ if(e.target.dataset&&e.target.dataset.go!==undefined){irPara(td,+e.target.dataset.go);return;}
+ if(fk&&ks.length>1&&!e.target.classList.contains('on')){irPara(td,ks.indexOf(fk));return;}
+ if(ks.length)abrirViewer(fk&&quadro[fk]?fk:ks[(cellIdx[c]||0)%ks.length]);
+ else if(sess.role==='setor')pick(c+'-1');
+};
+function pick(k,sub=false){if(enviando)return;kAtual=k;modoSub=sub;$('file').multiple=!sub;$('file').value='';$('file').click();}
+let enviando=false,modoSub=false;
+const toast=m=>{$('toast').textContent=m;$('toast').hidden=!m;};
+$('file').onchange=async()=>{
+ const arqs=[...$('file').files],sem=$('semana').value;if(!arqs.length||enviando)return;
+ if(!sem)return alert('Escolha o mês antes de enviar.');
+ const cell=kAtual.split('-').slice(0,2).join('-');
+ const chaves=modoSub?[kAtual]:[kAtual,...SLOTS.map(n=>cell+'-'+n).filter(x=>x!==kAtual&&!quadro[x])];
+ if(arqs.length>chaves.length)alert('Só cabem '+chaves.length+' arquivo(s) neste quadrado (máximo 5). Os demais foram ignorados.');
+ const lote=arqs.slice(0,chaves.length);enviando=true;let feitos=0;
+ try{
+  if(!(await api.existe(setorAtual.id)))throw new Error('Este setor foi excluído pela chefia.');
+  for(let i=0;i<lote.length;i++){toast('⏳ Enviando '+(i+1)+'/'+lote.length+'…');await api.enviar(setorAtual.id,sem,chaves[i],await comprimir(lote[i]));feitos++;}
+ }catch(e){alert('Falha ao enviar: '+e.message);}
+ if(feitos)await atualizar();
+ enviando=false;toast(feitos?'✅ '+feitos+' imagem(ns) enviada(s)':'');if(feitos)setTimeout(()=>toast(''),2000);
+};
+function comprimir(f){return new Promise((ok,no)=>{
+ const img=new Image(),u=URL.createObjectURL(f);
+ img.onerror=()=>{URL.revokeObjectURL(u);no(new Error('O arquivo não é uma imagem válida.'));};
+ img.onload=()=>{const r=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?ok(b):no(new Error('Falha ao converter a imagem.')),'image/jpeg',.85);};
+ img.src=u;
+});}
+let vLista=[],vIdx=0,vCell='';
+function mostrarCell(){const k=vLista[vIdx],[d,p]=k.split('-');kAtual=k;$('vTit').textContent=`${setorAtual.nome} — ${d.toUpperCase()} / ${p.toUpperCase()}`+(vLista.length>1?` [${vIdx+1}/${vLista.length}]`:'');$('vImg').src=quadro[k].url;}
+function abrirViewer(k){vCell=k.split('-').slice(0,2).join('-');vLista=itens(vCell);vIdx=Math.max(0,vLista.indexOf(k));mostrarCell();$('vAcoes').hidden=sess.role!=='setor';$('btnAdd').hidden=vLista.length>=5;$('vNav').hidden=vLista.length<2;$('viewer').hidden=false;}
+function cellPasso(d){vLista=itens(vCell);if(!vLista.length)return fecharViewer();vIdx=(vIdx+d+vLista.length)%vLista.length;mostrarCell();}
+let tvRef=null;
+function fecharViewer(){clearInterval(tvTimer);tvTimer=null;clearInterval(tvRef);tvRef=null;$('viewer').hidden=true;if(!sess&&api)$('home').hidden=false;}
+$('btnFechar').onclick=fecharViewer;
+document.onkeydown=e=>{if(e.key==='Escape')fecharViewer();};
+$('btnSub').onclick=()=>{fecharViewer();pick(kAtual,true);};
+$('btnAdd').onclick=()=>{const k=SLOTS.map(n=>vCell+'-'+n).find(x=>!quadro[x]);if(!k)return alert('Limite de 5 arquivos neste quadrado.');fecharViewer();pick(k);};
+$('btnDel').onclick=async()=>{if(!confirm('Excluir este arquivo?'))return;try{await api.remover(setorAtual.id,$('semana').value,kAtual);fecharViewer();await atualizar();}catch(e){alert(e.message);}};
+
+/* ===== MODO TV (lê o quadro atualizado a cada minuto) ===== */
+const ordem=()=>DIAS.flatMap(([d])=>PILARES.flatMap(([p])=>SLOTS.map(n=>d+'-'+p+'-'+n))).filter(k=>quadro[k]);
+let tvI=-1;
+function tvPasso(d){
+ const ks=ordem();if(!ks.length)return fecharViewer();
+ tvI=(tvI+d+ks.length)%ks.length;const k=ks[tvI],[dd,p]=k.split('-');
+ $('vTit').textContent=`${setorAtual.nome} — ${dd.toUpperCase()} / ${p.toUpperCase()} [${tvI+1}/${ks.length}]`;$('vImg').src=quadro[k].url;
+}
+$('btnTV').onclick=()=>{
+ if(!ordem().length)return alert('Não há arquivos neste setor para este mês.');
+ clearInterval(tvTimer);tvI=-1;$('viewer').hidden=false;$('vAcoes').hidden=true;$('vNav').hidden=false;tvPasso(1);tvTimer=setInterval(()=>tvPasso(1),6000);
+};
+$('btnProx').onclick=()=>tvTimer?tvPasso(1):cellPasso(1);
+$('btnAnt').onclick=()=>tvTimer?tvPasso(-1):cellPasso(-1);
+
+iniciar();
+</script>
+</body>
+</html>
